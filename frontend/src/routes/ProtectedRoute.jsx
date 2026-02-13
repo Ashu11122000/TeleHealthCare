@@ -1,7 +1,21 @@
 import { useSelector } from "react-redux";
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 
-export default function ProtectedRoute({ children }) {
-  const auth = useSelector((s) => s.auth);
-  return auth.isAuthenticated ? children : <Navigate to="/login" />;
+/**
+ * ProtectedRoute
+ * Checks if user is authenticated
+ * Used as a wrapper in AppRoutes.jsx
+ */
+export default function ProtectedRoute() {
+  const isAuthenticated = useSelector(
+    (state) => state.auth.isAuthenticated
+  );
+
+  // Not logged in → go to login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Logged in → allow nested routes
+  return <Outlet />;
 }
