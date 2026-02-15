@@ -1,14 +1,15 @@
 import { createContext, useContext } from "react";
+import { useSelector } from "react-redux";
+import { Navigate, Outlet } from "react-router-dom";
 import { featureFlags } from "../config/featureFlags";
 
 /**
  * Feature Flag Context
- * Holds system-wide feature toggles
  */
 const FeatureFlagContext = createContext(featureFlags);
 
 /**
- * Provider used at app bootstrap level
+ * Provider (wrap at app level)
  */
 export function FeatureFlagProvider({ children }) {
   return (
@@ -19,20 +20,32 @@ export function FeatureFlagProvider({ children }) {
 }
 
 /**
- * Guard to conditionally render UI based on feature flag
- *
- * Usage:
- * <FeatureFlagGuard flag="AI_ANALYSIS">
- *   <Component />
- * </FeatureFlagGuard>
+ * FeatureRoleGuard
+ * Can check:
+ * - allowedRoles (RBAC)
+ * - flag (feature toggle)
  */
-export function FeatureFlagGuard({ flag, children }) {
+export default function FeatureRoleGuard({
+  allowedRoles,
+  flag,
+}) {
+  const { user } = useSelector((state) => state.auth);
   const flags = useContext(FeatureFlagContext);
 
-  // Safety: if flags not loaded or flag missing → hide UI
-  if (!flags || !flags[flag]) {
-    return null;
+  // Not logged in
+  if (!user) {
+    return <Navigate to="/login" replace />;
   }
 
-  return children;
+  // Role restriction
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Feature flag restriction
+  if (flag && (!flags || flags[flag] !== true)) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Outlet />;
 }
